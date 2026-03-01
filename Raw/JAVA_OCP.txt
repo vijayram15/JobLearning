@@ -1,0 +1,96 @@
+--Method overriding always follows method signature.method signature means method name and parameterList (order incl.) only.
+
+--instanceOf:
+---- a instanceOf b means a subclass of b or a implements b.
+---- compilation check happens only when instanceOf is called on Class, for interface it will be checked at runTime.
+---- class resolution happens at compile time where as interface resolution happens at runtime.
+
+--synchronizedMap vs ConcurrentHashMap
+----synchronizedMap is a normal map wrapped with synchronized methods, where ConcurrentHashMap is conurrenct version implementaion of HashMap.
+----synchronizedMap is fail fast throws concurrentModificationException on modifying the Map, where as ConcurrentHashMap is fail safe doesnot throw concurrent Modification exception.
+----synchronizedMap allows null key and many null values, where as ConcurrentHashMap does not allow null.
+----synchronizedMap locks entire Map on read/write, where as ConcurrentHashMap allows bucket/segment/bin level locking using CAS operations.
+----synchronizedMap performs better at low concurrent environments whereas ConcurrentHashMap performs in higher concurrent environments.
+
+--virtual method:
+----it's the method overidden in subclass but invoked at runtime based on object type.
+---- non-final, non-static, non-private methods are virtual methods only.
+
+--Annotations are used as a warning at compile time about syntax/functionality which user supposed to mention.
+
+--Reflection is the technic used to inspect class at runtime.used by annotations, dependency Injection.
+
+--upcasting restricts access to parent methods (means no access to child specific methods) downcasting restores access to child specific methods.
+
+--String has it's own equals method which compares content, remaining all uses Object's equals method which does reference comparison by default.
+
+--equals contract
+----reflexive:- x.equals(x) true
+----symmetric:-x.equals(y)==y.equals(x) true
+----transitive: x.equals(y), y.equals(z), then x.equals(z) true
+----x.equals(null) always returns false
+
+--hashcode() contract
+----if two objects are equal with equals opertaion then thier hashcodes should be equal.
+----if two objects are not equal then their hashcodes may or may not be equal.
+
+--enumeration:-
+----set of fixed constants
+----public enum Season{WINTER,SPRING,SUMMER,FALL} - for(Season s:Season.values()){ s.name(),s.Ordinal()}
+----enum values can't be compared with int,we can create enum outOfString but it should match the value Season.valueOf("SUMMER") is valid, Season.valueOf("summer") is not valid.
+----enums can't be extended,in swtich case enum values should be mentioned directly not as enum.SUMMER etc.
+----enums can have constructors which can be private, so that only enums can only call them. 
+
+--Nested Classes:
+----Member Inner class--class defined at instance member level.
+----Local Inner Class--class defined inside method
+----anonymous inner class---local inner class without name
+----static inner class--class defined at static variable level.
+
+----Access Modifiers are allowed for member inner class and static inner class only because other two are local already.
+----except anonymous inner classes remaing can extend any number of classes/interfaces. Anonymous inner class should have exactly one superclass/interface.
+----except anonymous inner class remaining can be abstract and final.
+----except static classes remaining can access instances of outerclass and can't declare static methods.
+----local inner and anonymous inner classes access local variables if and only if they are final or effectively final.
+++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++
+--Marker Interfaces are the interfaces which contains no methods. Eg: Serializable, clonable.
+--composition( has-a) gives greater code reuse and gives access to other classes and methods which is difficult with inheritance.
+--aggregation is weaker has-a relation ship.
+++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++
+--absoluet path -- path of directory from root
+--relativePath -- path of directory from pwd.
+--stream/read-writer: stream deal with binary Data, where as readWriter deal with String.
+--class with Buffered always improves performance.
+--flush() immediately writes to disk.
+++++++++++++++++++++++++++++++++++++++++++++
+Serialization:
+--static class members, transitent wont be serialized, on deserialization they will be assigned default values.
+--for every change SerialVersionId should be changed and will be used on deserialization. why this is needed even though JVM provides one. different implementations like openJDK,oracleJDK can create different version IDs, so we've to mention one.
+externalization:
+++++++++++++++++++++++++++++++++++++++++
+JDBC:
+--for DB connection we need driver, connection,statement,resultset.
+--Bydefault resultset is TYPE_FORWARD_ONLY. other two are TYPE_SCROLL_SENSITIVE, TYPE_SCROLL_INSENSITIVE.senstive means changes done in table are visible, not supported by many.
+--Resultset concurrency Mode options: CONCUR_READ_ONLY, CONCUR_UPDATABLE
+--Prepared STatements preapre the execution plan in advance.
+--execute()-- any type
+--executeQuery()-return resultset -- for select and update
+--executeUpdate()--except select for all it's used.
+--resorces should be closed in the order, resultset, statement, connection. connection closes statement, statement closes resulytset
+--computeIfPresent() is used for sfae updates -- (update if value present) -- for counters/aggregators)
+--computeIfAbsent() is used for lazy initislaizations - insert if not presnt -- used for caches.
+--peek() is the only terminal method in stream, which gives stream as output, so that we can use as stream even after using this method.
+--skipList:thread-safe, sorted map, skipSet: thread-safe, sorted set
+++++++++++++++++++++++++++
+streams vs parallel streams:-
+--streams run on single thread, where as parallel streams splits the tasks on multiple threads using forkjoin pool.
+--streams best for small datasets/lightweight operations, parallel streams suited for larger datasets/CPU-senstive operations.
+--streams preserves encountered order, but parallel streams wont preserve the order unless forced explicitely.
+
+streams vs collections:
+--collections are in-memory datastructures store and manage elements, streams are pipeline for processing the data from collections.
+--elements must be computed and stored before. Lazy computation.
+--even after processing collections will be available, streams once used wont be available further.
+

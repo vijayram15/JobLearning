@@ -1,0 +1,505 @@
+--Java is not fully object oriented but is Object supportive language.
+----due to it's support for primitives, static->which can be accessed with out objects, wrapper classes->which deals with primitives by doing unboxing and autoboxing. 
+
+--package statement if exists should appear only once and be the first statement before the class declaration.
+
+--import statement can't be used to import multiple classes and interfaces with the same name.
+----if present import statements should follow the package statement in the class.
+----you can't import subpackages using * in the import statement.
+
+--a public class file can be defined only in a source code with the same name.
+----point of execution is the main() method in the class.
+----main() method should be defined with signature public static void main(String [] args) or public static void main(String ... args) or public static void main(String args ...), public and static can be interchanged and argument can be any valid name.
+
+--class from default package can't be used in any named package.
+
+--we can import an individual static member or all the static members from a class using static import feature. 
+----feature is staic import but syntax is import static.
+
+--Members of default package are accessible to the ones with in the same directory.
+
+--Java defines four access levels and three modifiers.
+
+--Public is least restrictive.
+
+--Protected-> package+subclasses--> accessible to the members of same package and the derived classes in the different package as well.
+----A Derived class in the different package can't access the protected members of the base class using reference variables, but can access using inheritance.
+----Eg: 
+// In package1
+package package1;
+
+public class Base {
+    protected int value = 42;
+}
+// In package2
+package package2;
+
+import package1.Base;
+
+public class Derived extends Base {
+    public void test() {
+        Base b = new Base();
+        // System.out.println(b.value); // ❌ Not allowed
+        System.out.println(this.value); // ✅ Allowed (inherited)
+    }
+}
+
+--default access also called as package level access, class defined using this can't be accessed outside the package.
+
+--private is the least restrictive access modifier and can be accessed within the same class.
+
+--nonaccess modifiers change the default properties of a class.
+
+--strictfp ensures that calculations involving floating points are identical on all platforms.
+
+--abstract applied to the class make it as abstract class even without abstract methods.An abstract class can't be instantiated.
+
+--An interface is implicitely abstract and java compiler implicitely adds abstarct to the interface definition, so using abstract to the interface is redundant.
+
+--post java8 abstract class and interface differences narrowed down but still abstract class is class can have instance variables,constructors but interface can't.
+---- Interfaces represent generic behaviour where as Abstract classes represent specific behaviour. bird fly, helicaptor fly.
+
+--static attributes can be accessed even without instantiation of the class.
+
+--a method can't be both static and abstract because abstract needs an instance to implement it where as static dont need any instance. mutually exclusive.
+
+--static method variables/methods can't access non-static method/variables but reverse is true.i.e. non-static methods and variables can access static method and variables.
+----static members are not involved in runtime polymorphism because of compiletime binding.
+----Runtime Polymorphism means The JVM decides at runtime which method to invoke based on the actual object type. 
+----Since static methods are not tied to objects but to classes, dynamic dispatch doesn’t apply so static methods can't be overridden.it'called method hiding.
+
+--Method hiding:-
+----Method hiding means the version of the method that gets called depends on the reference type, not the actual object type.
+----in method hiding always parent's method is executed,because static methods are bound at compile time, so they can't participate in runtime polymorphism.
+
+--static members can be referenced with null.
+
+--final class can't be extended and final method can't be overidden and final variable can't be reassigned, only assigned a value once.
+----final and static in combine defines a variable as constant.
+
+--Features of java:-
+----Object orientation:-emulates rela-life object definition and behaviour.
+----Abstraction:-abstract the objects and include only the required behaviour.
+----Encapsulation:-state or fields of a class will be protected from unwanted access and manipulation.
+----Inheritance:-allows code reusability.
+----polymorphism: Objects exhibit multiple behaviours.
+----Typesafety: Variable must be defined with it's datatype before we can use it. (java script is not typesafe)
+----Automatic memory management using garbage collection
+----java is n't single threaded language, supports multi threading and concurrency.
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+--java defines 8 primitive data types -> char,boolean,byte,int,short,long,double,float.
+---- can be categorized as boolean, numeric and character data types.
+
+--literal is a fixed value that does not need any further calculations to be assigned to a variable.
+----default literal value for all object references is null.
+
+--numeric values can be used to store integer/decimal values.
+----byte (8 bits),short (16 bits),int (32 bits),long (64 bits) used to store integer and double(32 bits) and float(64 bits) used to store decimal values.
+----default non-decimal is int where as decimal is double.
+
+--Internally char data type stores unsigned integer value(only postive integer).
+----when you assign a character to a variable java stores it's equivalent integer value for that character instead of letter.
+
+--when ++,-- used in the post fix notation, values will be used in the expression first and later increments/decrements happen.
+--when ++,-- used in the prefix notation, values will be incremented/decremented first and later used in the expression.
+--By default unary operators have higher precedence over multiplication/addition operators.
+
+-- Assignment happens from right to left, where as expression evaluation happens from right to left.
+
+--opertaors == and != are used to compare all types of primitives.
+
+--logical operators && and || are called short circuit opertaors because && doesnt evaluate second part if the first part is false, and || doesnot evaluate the second part if the first pasrt is true.
+
+-- & and | perform the same as && and || but evaluates both expressions.
+
+--wrapper classes used to convert the primitives to their respective object types so that they can involve in colection frameowrk operations.
+----wrapper classes are immutable.
+----None of the wrapper classes define no argument constructor. as wrapper class is immutable it doesnot make any sense to have a default constructor.
+----we can create wrapper class objects by using assignment, constructors , static methods like valueOf().
+----All wrapper classes except Character accept a constructor with string as parameter.
+----All wrapper classes define methods like primitive Value() to retrive primitives eg: intValue(), charValue().
+----To get primitive data type value for a corresponding string, we can use parseDataType methods.
+----valueOf() method returns correcsponding wrapper class Object.
+----Adding a value to the wrapper class variable does not modify the object as it's immutable, instead variable is assigned a new object.
+----unboxing a wrapper reference variable which is null throws NPE.
+
+--Wrapper class constructor vs valueOf() method:-
+----Wrapper class Booelan, the cached instances can be accessed directly as only two values TRUE, FALSE.
+----Wrapper class Character caches instances with values 0 to 127.
+----Wrapper classes Byte, Short, Integer, Long caches instances with values from -128 to 127.
+----No Cached instances exist for double and float.
+----So, when ever valueOf() method is called it returns the instance from cached range if exists , otherwise creates a new Object. But constructor always returns new Object.
+
+--Object creation steps:-
+----Person p = new Person();
+----new Person object is created in Heap.
+----variable named p is created in the stack and assigned null.
+----variable p is assigned the memory address of the object created in heap.
+
+--primitives vs Object refrences:-
+----primitives store actual values, where as Object references store memory address.
+----primitives are not marked for garbage collection, where as Object references can be garbage collected.
+
+--we can't store bigger value to small type variable, provided if we do explicite casting then no error will be thrown.
+---- eg: Long l = 547656876987; int i = l; CE--> int i = (int)l; No CE.
+
+--For all arithmetic operations, for the data types except boolean all operand values will be widened to int,long,float,double based on their involvment, called implicite widening.
+----implicite widening is not allowed with final variables.
+
+--Objects of different wrapper classes with same content never be equal.
+----Ex: short s = 20; Integer i =20; i.equals(s) is false. i==s throws compile time error.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+--variables have multiple scopes like class,instance,local and method parameters.
+
+--in a method local variable can't be used before it's declaration.
+
+--class-instance, local-method variables can't be defined using the same name.
+----local and instance variables can be defined with the same name, in a method local variable takes precedence always.
+
+--grabage collector can reclaim memory from a group of referenced objects, which is called as island of isolation.
+
+--we can define only one variable argument (...) in the method paramerts and it should be last one in the parameterList, otherwise code won't compile.
+
+--method which does not return any thing can still have return; in the method.
+
+--Overloaded methods accept different list of arguments.
+----change in the number,type,order of parameters.
+----change only in the return type or access levels won't be considered as overloading.
+
+--constructors are special methods which will create and return object of that class in which they are defined.
+----constructors have same name as class name and they don't specify any return type not even void.
+
+--Initializer blocks execute before constructor called.
+
+--default constructors are defined by java if no constructor is available in the class.Once the custroctor is defined, default constructor will be removed by java.
+----accessibility of default constructor matches the accessibility of class. Eg: A public class contains public default constructor.
+
+--If initializer block available inside a class but not inside method will be executed for every instance creation.i.e. before constructor execution but after field initialization.
+--Static block will be executed before initializer block only once when class loads.
+
+--Constructor overloading:-
+----different argument lists
+----just change in access levels can't be considered as constructor overloading.
+----constructor can call it's overloaded constructor using "this" only. Not by using it's class name.If present it should be the first statement inside constructor.
+
+--encapsulation and information hiding can be used interchangebly.
+
+--Objects and primitives behave diffrently when they passed to method.
+---- Primitives → copy of value, no effect on original.
+---- Objects → copy of reference (value), so changes to the object’s state are visible.
+---- Reassigning the reference inside the method doesn’t affect the caller.
+
+--Java is always pass by value, with primitives actual value will be passed, with objects reference value will be passed. mis conception that objects are pass by reference actually pass by refrence value.
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+--java.lang package is default imported package to all the classes.
+
+--String:-
+----immutable sequence of characters.
+----String objects created with new operator are never placed in the pool, where as without new operator are placed in the String constant pool.
+----Comparison operator (==) always compares references where as the equals opeartor compares the content of the string.
+----None of the methods defined in String can change it's value.
+----Stores in a private variable of type charArray value[], which is final.
+---- All string methods strings are created using new operator not in constant pool.
+---- due to immutability they canbe used in networking, multi threading environment and in encryption/decryption etc.
+
+----charAt() method retrieves the character at the specifie dindex in the String.
+----indexOf()method retrieves the first occurance of the character(s) in the string.
+----substring() gives the portion of the String and doesn't include the character at the endposition.
+----trim() method will remove the tailing,leading whitespaces and returns the new string, does not clear the whitespaces in the string.
+----length(), startsWith() and endsWith() are the methods to retrive length of the string and end with, start with certain strings.
+
+--why strings are immutable:-
+----Immutability ensures safe reuse and reduces memory overhead.
+----Immutability prevents tampering, so they can be used in security aspects.
+----Inherent thread safety is provided by Immutability makes concurrent programming easy and reliable.
+----Immutability guarantees a consistent hash code throughout the string’s lifetime.
+----Since strings don’t change, their hash codes and other computed values can be cached.
+
+--String Builder:-
+----mutable sequence of characters.
+----value can be modified without creating new String builder Object.
+----String builder can be created using constructors accepting String, String Builder or int capacity of String builder or nothing.
+----charAt,indexOf,substring,length will work the same as String.
+----append () method used to append the set of characters at the end.
+----insert() method used to insert the characters at any position.
+----delete() method used to delete the characters from the string builder.
+----deleteCharAt() is used to delete the character from the String builder.
+---- no trim for String builder, but reverse() method is used to reverse the string.
+----replace() and subsequence() methods used to replace and fetch the sequence of characters from the string.
+
+----String Builder and String Buffer are the same except that the methods of String buffer are syncronized. Synchronized version of string builder is string buffer.
+
+--Array:-
+----Array is object which stores homogeneous elements at contiguous memory locations.
+----can store either primitive or object collection.
+----one dimensional array is collection of objects.
+----two dimentional array is collection of objects, in which each object is one dimensional array.
+----three dimensional array is collection of objects, in which each object is two dimensional array.
+----creation of array has 1) declartion 2)allocation and 3) initialization steps.
+----[] can follow either name or type, in multi dimensional array it can follow both.
+----An array declaration creates a variable refers to null.so mentioning size is invalid at the time of declaration.
+----once allocated array elements store default values -> null,0,0.0,false,/u0000.
+----java compiler does not check at which index we are trying to access the elements of array, and hence arrayIndexOutOfBounds Exception thrown at runtime.
+----All arrays are Objects so they inherit the methods from Object class.
+
+--ArrayList:-
+----resizable Array.
+----we can use iterator,listiterator and enhanced for loop to iterate over list.
+---- Iterator it = List.Iterator()-- while (it.hasNext()){sysout (it.next())}, same for List Iterator, enhanced for loop is for(int i:list)
+---- ListIterator and enhanced for loop prints the values in the order of insertion.
+---- set(index, value), remove(index) and addAll () methods available for ArrayList.
+---- clear() method is used to remove all the elements from an ArrayList.
+---- get(index), indexOf(), lastIndexOf(), contains methods exists for ArrayList.
+---- toArray() method is used to convert arrayList to array.
+---- ArrayList clone returns the shallow copy of the ArrayList.
+
+--shallowCopy vs deepCopy:-
+----shallowCopy creates new object but copies the references of nested objects instead of duplicating them.
+----Both the original and copied objects share the same reference objects. changes in one affects the other.
+----Object.clone() performs shallow copy and is faster and no memory overhead.
+----DeepCopy creates new objects and duplicates all nested objects.
+----Both original and copied objects are independent.
+----Need custom logic to implement this and is slow and face memory overhead.
+
+--equals:-
+----default implemention is to check whether two variables refer to the same object. String is exceptional to check the content.
+----when null value is passed to it, it should return false.
+
+--LocalDate - just date
+--LocalTime - just time
+--LocalDateTime - both Date and Time
+--ZonedDateTime - contains date Time and timeZone.
+-- All can use now() method to get current Date, time, dateTime and ZonedDateTime.
+-- All can use of method to create specific date,time, dateTime and ZoneddateTime.
+-- to find ZoneId we can use zoneId.Systemdefault();
+-- T is used to seperate Date and Time.
+-- period can be created using ofYears(),ofMonths(),ofWeeks(),ofDays() and used to represent day or more time.(P)
+--period can be used for LocalDate,LocaldateTime,ZoneddateTime.
+-- duration is used to represent smaller units of time. (PT)
+--duration can be used for LocalTime,LocaldateTime,ZonedDateTime.
+--Instant: to repreesnt specific moment .. Instant.now(). 
+
+--LocalDate
+----LocalDate instances are immutable and constructor is private and hence uses static method of to create instances.
+----LocatDate.of(int year,int month,int dayOfMonth), LocalDate.of(int year, Month month, int dayOfMonth), throws DateTimeException when values are out of range.
+----LocalDate.now() returns current Date.
+----LocalDate.parse("2026-02-27") used to instantiate localdate. format must be "9999-99-99" day and month values must be two digits.
+----LocalDate's getDayOfMonth(),getDayOfYear(),getDayOfWeek() , getMonth(), getYear(),getMonthValue() are self explanatory.
+----LocalDate's minusXXX() methods used to find the substracted values like minusDays(), minusWeeks(),minusYears(),minusMonths().
+----LocalDate's plusXXX() methods used to find the substracted values like plusDays(), plusWeeks(),plusYears(),plusMonths().
+----LocatDate's withXXX() methods used to replace the values in LocalDate.
+----None of the methods actually modify the existing Localdate object but return new Object.
+----LocalDate's overloaded atTime() method in combine return LocalDateTime()
+----toEpochDay() convert Localdate to epoch date and counts from january 1 1970.
+----January is considers as 1 not as 0.
+
+--LocalTime:
+----of method takes hours, minutes, seconds as parameters. 0-23 should be mentioned no am, pm mentioned.
+---- we can use isAfter(), isBefore() instance methods to get the time before/after certain time.
+---- AtDate() method can be combined to define LocalDateTime.
+
+--LocalDateTime: 
+----of method can be used to create an instance of LocalDateTime (year-month-day T hours:minutes:seconds:nano seconds). T is for sepeartion character.
+
+--Period class represents date based amount in years,months and days like 2 years 3 months and 5days etc.
+--Duration class is used to represent Time based amount in seconds and nano seconds.
+--we can add/substarct period instances from LocalDate/LocalDateTime Instances.
+-- we can use static method between LocalDate instances to instantiate period.Eg: between (localDate dateinclusive, localDate dateExclusive)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+--All three parts of ternary operator are mandatory i.i. expression?"":"";
+
+--switch statement accepts arguments of type char,byte,short,int and String and wrapper classes Byte,Short,Integer,Character and Enum.
+----case value should be a compile time constant and should be assignable to the argument passed to switch statement.
+----case value can't be null.
+----in the absence of break statement, all statements will be executed inclusding default statement in switch.
+
+--for loop all the three constructs initialization, update, termination are optional. for(;;){} is valid.
+
+--enhanced for loop or for-each loop is used to iterate collections. for(type t: collection name)
+
+--while loop checks the condition before it starts the statement execution.
+
+--doWhile loop checks the condition after it complets the statements execution.
+
+--both while and doWhile executes statements until the conditional statement evaluates to false, but doWhile executes at least once even if the condition evaluates to false.
+
+--enhanced for loop can't be used to iterate over multiple collections or arrays in the same loop.
+
+--when we know the iterations count then use for loop.
+
+--when we don't know the iterations count then use while/do-while loop.
+
+--break statement is used to exit/break out of loops like for,enhanced for, while, do while, switch.
+
+--continue is used to skip the current iteration steps and continue with the next iteration.
+
+--break/continue not used inside lambda expressions.use "return" instead.
+
+--we can use labelled break/continue statements.
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+--Private members of base class can't be inherited in the derived class. but accessible via public/protected methods.
+--Default members are inherited only if same package.
+--Protected memebers are inherited irrespective of package.
+--Public by default aceesiible.
+
+--All top level classes can be defined either public,default. all the inner and nested can be defined using any level.
+
+--static method inside an Interface should be called with Interface name only, not with reference/class name.
+
+--overriding the default method doesn't need default keyword. it should be overidden like regular method.
+
+--static method in the interface belongs to interface itself. neither be overidden nor hidden by the implementing class.
+----The implementing class does not gain the interface’s static method.
+----Even if the class defines a static method with the same signature, it’s a completely separate method.
+---- Interface static method → InterfaceName.methodName().
+---- Class static method → ClassName.methodName().
+
+--Diamond Problem:-
+----Derived classes can get multiple implementations for the same method signature and hence multiple inheritance not allowed in java.
+---- Class A {}, Class B extends A {}, Class C extends A{}, class D Extends B,C{} -- Here D doesnt decide which class method it has to execute. causing ambuguity.
+---- Where as with interfaces it wont be an issue as they dont define methods. Implementing class has to provide definition.
+----But from Java8 with default methods introduction in interfaces diamond problem resurfaced.
+----To fix this, Java requires the implementing class to explicitly override the conflicting method and decide which one to use: like Interface.super.method();
+
+--Why abstarct classes have constructor??
+----Even though you can’t instantiate them directly, abstract classes are part of the object construction chain when a subclass is instantiated.
+----When you create an object of a concrete subclass, the constructor of the abstract superclass runs first (just like with normal inheritance).
+
+--An object of base class can't be referenced by a variable of derived class. where as reverse is true. Base class variable can refer an object of derived class.
+
+--When an derived class object is referred by base class variable, then it should access only base class properties. same with interface as well.
+
+--Super and this are object reference variables and are created for each object by JVM.
+
+-- this refers to object's own instance.
+
+--super refers to parent's object.
+
+--return type of overridden method can be same or subtype co-variant return type, access level must be less restrictive, throws should have same or subclass exceptions
+
+--variables and static methods are compiletime binding. where as method calls resolved at runtime and hence runtime binding.
+
+--default method introduction is for backward compatibility, with out breaking existing code, if we want to add some functionality to an interface.
+
+--static methods in interface are purely utility methods.
+
+--Casting is forcefully making a variable to behave like another variable.  
+
+--Upcasting:
+----When you upcast, you treat a subclass object as its superclass.
+-----You can only access the members defined in the superclass (even though the object is actually a subclass).
+
+--Downcasting (Superclass → Subclass)
+----When you downcast, you tell Java to treat a superclass reference as a subclass reference.
+---- Safe only if the object is actually an instance of that subclass.
+---- Allows access to subclass-specific properties.
+
+--Key Difference: Properties vs Methods
+----Properties (fields): Access depends on the reference type, not the actual object.
+----Methods: Overridden methods are resolved at runtime (dynamic dispatch), so the actual object’s method runs.
+
+--Casting changes what you can access through a reference.
+----Upcasting restricts you to superclass members.
+----Downcasting lets you access subclass-specific members, but only if the object truly is that subclass.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+--classNotFoundException
+----checked Exception.
+----happens when we try to load the class dynamically at runTime, using reflection, class.forName() or class.loadClass()but the class not available at runtime.
+
+--NoClassDefFoundError
+----Error
+----Happens when JVM tries to load the class which is available at compile time but missing at runtime.
+
+--Reflection in Java is a powerful feature that lets you inspect and manipulate classes, methods, fields, and constructors at runtime.
+----get reference using class.forName() and then use getDeclaredConstructor, getDeclaredMthod(), getDeclaredField methods to get all the details of the class.
+
+--finally always executes even though you have return statement in try/catch blocks.
+--if both catch and finally have return statements then the caller receives the value from finally block.
+----if catch block return primitive, finally can't modify that. because it's stored immediately. if catch block return object then finally can modify that.
+--java will not allow to declare a catch block for a checked exception that can't be potentially thrown by try block code, it leads to unreachable code.
+--multi catch (Exception1|Exception2)-- Exceptions should not be related.Used to write code without duplication
+--try with resources, closes all resources automatically, called automatic resource management.no need to be followed by catch/finally blocks.
+--we can't place any class inside trywithresources, class should implement autoclosable interface.
+--idempotent method call means calling amethod without any sideeffects many times.
+--when multiple execptions thrown, all but first will be handled, remaining will be supressed.
+
+--classCastException:-
+----A ClassCastException only happens if the actual object type doesn’t match the cast.
+----it happens when downcasting gone wrong. To avoid this use instanceOf check.
+----compiler allows because it just check whether the cast is legal and follow the hierarchy or not
+---- Animal a = new Cat(); Dog d = (Dog) a;
+
+--none of try,catch,finally exists independently.
+
+-- (+/-) AnyInteger/0,0/0  thows Arithmetic Exception.
+
+-- (+/-)decimal/0 or 0.0 or  = (+/-)Infinity 0.0/0=Nan Not a number. -- Decimal involved infinity or Nan.
+
+--Numberformat Exception when string is not being converted to number.
+
+--ExceptionInInitialization error:-
+----Runtime exceptions araising from static block execution or static variable initializtion or static method execution may throw ExceptionInInitialization Error.
+---- can be thrown by the object of RunTimeException only. JVM throws this, not allows the users to throw.
+
+--stackOverflowError:-
+----when java method calls itself so many times so that stack allocated to it overflows.
+
+--OutOfMemoryError:-
+----When JVM unable to create new Objects on the heap and gc not able to freeup the memory.
+=======================
+Java Memory management:
+
+--JVM divides memomry into several runtime areas. out of which main are
+
+--Heap: stores objects and arrays. shared across all the threads.
+--Stack: stores method calls and local variables. each thread has it's own stack.
+--Metaspace: contains class metadata. earlier it was permgen
+--PC: each method instruction stored here
+--native method stack: non java method calls stored here.
+
+How memory is managed?
+-- Object creation: reference is created in stack and object is created in heap.
+-- Garbage colection: JVM autolatically reclaims memory from teh objects which are no longer refrenced.
+-- Generational Heap structure of GC contains three sections:
+    -- young generation: newly created objects
+	--old generation: long-lived objects
+	--Metaspace: conatins class metadata
+
+--Metaspace contains metadata for classes. replacement of permgenspace from java8
+-- Meta space is outside of heap where as permgenspace is inside heap.
+-- Meta space size is dynalic and grows as needed where as permgenspace is fixed and needed amnual tuning.
+-- with Meta Space outof memory error is rare only happens if system memory is ehausted.
+
+Java Memory Model: this is how JVM handles memory in caes multi threading environment.
+- Defines how threads interact through memory.
+- Specifies when changes made by one thread become visible to others.
+- Provides rules for synchronization and atomicity.
+- Prevents concurrency bugs like race conditions and stale data.
+
+-Happens-Before Relationship:- Defines ordering rules for operations across threads.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

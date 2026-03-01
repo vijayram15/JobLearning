@@ -1,0 +1,127 @@
+--Thread: Basic unit of Execution and cane created by Extending Thread or by implementing Runnable.
+
+--Runnable decouples task and Thread, whereas Thread combines both.
+----We can extend Thread class and override run method.
+----Implmenting Runnable is preferred due to seperation of thread task and can be shared to multiple threads and compatible with Executor framework.
+
+--callable is same as runnable but returns result and can throw exceptions.
+
+--Thread life cycle :- new->Runnable->Running->wait/Blocked->Terminated.
+
+--Every object has an intrinsic lock used by synchronized.
+
+--Executor framework is an API which manages threads, instead of manually creating threads, we can submit runnable tasks to executor service.
+---- submit() method returns future, where as execute() returns nothing, both takes runnable object as parameter.
+
+--Synchronizaion means only one thread can execute a block/method at a time.
+
+--Race condition happens when multiple threads access the shared data simultaneously, which lead to inappropriate results.
+
+--Synchronized vs locks:-
+----locks have tryLock() and fairness-(long waited thread gets the lock)
+----locks interface is more flexible as lock can be acquired in one method and can be released in other, which is not possible with synchronized.(reentrant lock)
+----trylock() method wont wait indefintely if lock is not acquired, it either returns immediately or does other tasks, so that performance will be improved.
+----locks condition objects which function similar to wait(),notify and notifyall() but with greater control.
+----locks interface supports specialized locks like readwritelock and stampedLock, where multiple threads read data and restricting access to a single writer thread.
+
+--ConcurrentHashMap is a thread safe java collection which provides high concurrency by providing segment/bucket level locking instead of locking the entire map.
+----It allows multiple threads to read without blocking and write concurrently to different segments/buckets.
+----Retrievals (get, containsKey) never lock.
+----Updates (put, remove) lock only a small portion of the table.
+----A read reflects the most recently completed update at the time the read begins, Formally, an update to a key happens-before a successful retrieval of that key.
+----Bin based architecture and a bin can be list,tree or empty. updates will lock the only bin being modified.Other bins remain accessible to other threads, multiple threads can update different bins simultaneously.
+----When multiple keys map to the same index,i.e. collision happens then the bin can be converted to balanced Tree.
+----Fail safe and Do not throw ConcurrentModificationException.
+----null is used internally as a reliable atomic indicator of “no result”.
+
+--The CopyOnWriteArrayList in Java is a thread-safe implementation of the List interface found in the java.util.concurrent package. 
+----It is designed for environments where read operations vastly outnumber write operations.
+----It achieves thread-safety by creating a fresh copy of the underlying array for every modification operation (add, set, remove, etc.). 
+----This ensures that concurrent read operations on the original array remain unaffected. 
+---- Both Concurrent HashMap and CopyOnWriteArrayList uses volatile variables and concurrent HashMap uses CAS (compare and swap) methods.
+
+--CAS vs. synchronized:-
+----When inserting the first element into an empty bin, ConcurrentHashMap uses CAS via Unsafe to place the node directly.
+----CAS allows threads to attempt modifications without locking the entire table or bin first.
+----Empty Bins: If a bin is empty, a CAS operation is attempted to insert a new node, avoiding locks.
+----Occupied Bins: If the bin is not empty, synchronized is used on the first node of that bin to handle subsequent operations.
+----Performance: CAS is generally faster as it avoids the overhead of traditional locking, which is why it is preferred for initial, uncontended insertions. 
+----CAS allows for higher throughput by enabling concurrent writes to different, non-empty buckets while using synchronized only when necessary for collision handling. 
+
+-- Synchronizers:-to coordinate tasks among threads---control the execution, interaction, and coordination of multiple threads, ensuring thread safety and proper ordering in multi-threaded environments. 
+---- CountDownLatch: Waits until a set of operations complete.
+---- CyclicBarrier: Threads wait until all reach a barrier point.
+---- Semaphore: Controls access to resources by limiting the number of threads accessing the resource.
+
+--Fork/Join Framework: Splits tasks into subtasks recursively for parallel execution.
+
+--Future is the result of anychronous computation.
+
+--CompletableFuture: An advanced Future Supports async programming with chaining, combining, and exception handling.
+
+--Parallel Streams: Simplifies parallelism but can be inefficient for I/O-heavy tasks
+
+--Atomic Classes: - Classes that provide lock-free thread safety . Eg:AtomicInteger.
+---- Atomic classes achieves thread safety and atomicity primarily through a hardware-supported operation called Compare-And-Swap (CAS), without using explicit locks
+---- Internal working mainly rely on Volatile and CAS (Compare and Swap)
+---- Volatile ensures visibility of the changes immediately.
+
+--CAS is hardware based low level operation, where the values will be read from memory location and compared with expected values provided by Thread and updates memory location if matches otherwise write fails.
+
+--Volatile ensures visibility; synchronized ensures both visibility and atomicity.
+
+--Blocking Queue: Queue supporting thread-safe put/take operations with blocking.
+
+--ThreadLocal:Provides thread-specific variables
+
+--deadlock:When threads wait indefinitely for resources held by each other
+
+--How to avoid Dead Lock??
+---- Acquire locks in consistent order.
+---- Use tryLock with timeout.
+---- Minimize lock scope.
+
+--Livelock:Threads keep responding to each other but make no progress.
+
+--Starvation:A thread never gets CPU time due to scheduling policies.
+
+--ThreadSafety:Code behaves correctly when accessed by multiple threads.
+
+--Immutable objects are inherently thread-safe.
+
+--Executor vs fork/join: Executor manages tasks; ForkJoinPool is specialized for divide-and-conquer.
+
+--Virtual Thread:- Lightweight threads managed by JVM, enabling massive concurrency. (Java 21)
+
+--Multiplexing in HTTP/2 is a core feature that enables sending multiple request and response messages simultaneously over a single TCP connection.
+----It eliminates the HTTP/1.1 head-of-line blocking issue, allowing browsers to load assets (CSS, JS, images) concurrently without waiting for previous requests to finish. 
+
+--daemonthread is the one which will not prevent JVM from exiting when program finishes.
+--executing multiple threads and processes at the same time is referred as concurrency.
+--context switching is the process of storing a thread's current state and later restoring to continue the execution.
+--Thread priorities are 1,5,10.
+--polling is the process of checking the data intermittently at a fixed interval.
+--Thread.sleep will request the current Thread to sleep and take rest for some time, throws interrupted Exception.
+
+--ExcutorService Framework creates/manages threads. newSingleThreadExceutor() used to create threads. executor service executes tasks in order except main thread.
+--newSingleThreadExceutor(),newSignleThreadSchedulaerExeccutor,newcachedThreadPool,newFixedThreadpool,newScheduledThreadpool are the methods to create threads in executorService.
+--During shutdown new tasks will be rejected and rejectedExecutionException is thrown.
+--once all completed isShutDown(), inTerminated() return true.
+--shutdownNow will stop teh running tasks and returns a list of tasks that were never started.
+
+-- difference between execute() and submit() both or asynch, but Submit() returns future object.
+--invokeAll() wait until all are invoked
+--invokeAny() wait until atleast one invoked
+--callable is similar to runnable but return future an dthrows checked exception. 
+--common practise to allocate threads based on CPUs.
+--Atomic classes are Boolean,Integer,IntegerArray,Long,LongArray,Reference,ReferenceArray
+--Synchronization is protecting data integrity at the cost of performance.in otherwords make multithreading perform like singke thread.
+--concurrent collections:-
+--Blocking Queue:regular Queue, but includes methods that will wait a speific amount of time to compelte the operation.
+--copyonWriteArraList/set: every time modification happens new Struture will be created. performance overhead due to this.
+--Synchronized vs volatile: volatile have only the visibility of the changes done to that but no locking, where as synchronized can have the visibility and locking as well.
+--synchronized collections vs concurrent collections.
+-- fail fast, no new structure will be crteated on modification, throws concurrent modification execpetion.
+
+
+

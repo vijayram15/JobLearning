@@ -1,0 +1,249 @@
+Initial Gold Report Monolith design:
+
+1) Gold Report application will kickstart with a scheduler job wich will consume the data from upStream System Kafka will contain the Excess data messages.
+2) Post consumption RAW Excess message Data will be stored in Oracle Database with status as "NEW".(EXCESS_MESSAGE)
+3) For Every "NEW" Message in Oracle database, JBPM Process will be invoked and an instance will be created and all the data will be stored in JBPM Database. (approx 1000-2000 instances created in 10-15 minutes)
+4) End-Users login to our Application and process the JBPM Instances and the processed instance information will be again persisted in JBPM.
+5) At the end of the Day an Email will be sent (csv/excel/pdf) to the stake holders by querying JBPM Database for COMPLETED instances and the email entries were stored in Audit Table.
+
+Above design worked well for one client with perday load of ~1000 to ~1500 records. But later client introduced larger volume of trades per day and introduced few more new trades. Meantimes some more clients across the board wanted the same system to be implemented for them. Our Team management thought of breaking this monolith to microservices leveraging cloud services. But the major challenge is jbpm as we are running EOF version with very limited knowledge base.
+============================
+🔹 Detailed Explanation of the Architecture:
+
+1. Ingestion Service
+- Trigger: AWS EventBridge (scheduled rule).
+- Execution: AWS Lambda connects to on‑prem Kafka, consumes messages.
+- Persistence: Stores raw "NEW" messages in Oracle DB.
+- Notification: Publishes messages to Amazon SQS for downstream services.
+- Benefit: Cost‑efficient (pay per invocation), simple scheduling, decoupled ingestion.
+
+2. Workflow Service
+- Trigger: AWS Lambda subscribed to SQS.
+- Execution: Creates JBPM process instances concurrently (up to 20 Lambda executions).
+- Persistence:
+- JBPM DB → workflow state and execution details.
+- DynamoDB → correlated metadata (instance IDs, payloads).
+- Benefit: Decoupled orchestration, scalable correlation store, fast lookups.
+
+3. Task Execution Service
+- Access: End‑users log in securely via UI/API.
+- Execution: Users process JBPM tasks.
+- Persistence: Updates both JBPM DB (workflow status) and DynamoDB (payload modifications, status).
+- Optional: Caching summaries for faster UI rendering.
+- Benefit: Provides responsive user experience, keeps workflow state consistent.
+
+4. Email Service
+- Trigger: Scheduled job (end of day).
+- Execution: Queries DynamoDB for "COMPLETED" instances.
+- Report Generation: Creates CSV/Excel/PDF reports.
+- Persistence: Stores reports in Amazon S3.
+- Notification: Sends emails to stakeholders.
+- Audit: Logs email activity in Audit RDS.
+- Benefit: Decoupled reporting, durable storage, compliance logging.
+
+🔹 Data Flow Summary
+- Kafka → Ingestion Service → Oracle + SQS
+- SQS → Workflow Service → JBPM DB + DynamoDB
+- Task Execution Service → JBPM DB + DynamoDB updates
+- Email Service → DynamoDB → S3 + Email + Audit RDS
+
+This design balances event‑driven decoupling (via SQS) with state persistence (Oracle, JBPM DB, DynamoDB, RDS). Each service owns its responsibility, but duplication of state (JBPM DB + DynamoDB) is accepted for performance and scalability.
+
+Final Recommendation
+The architecture is solid, but to avoid cycles:
+- Never let Workflow Service write back to Oracle.
+- Keep JBPM DB writes isolated to Workflow Service.
+- Use Audit RDS for reporting flags instead of DynamoDB
+======================================
+	
+1) First Design pattern we employed here is Database per service:-- Each microservice owns its data (Oracle for Ingestion, DynamoDB for WorkFlow/Task Execution services).
+
+Because for every report we are depending heavily upon JBPM Database. which contains instance data,status, processed payload info,instance session.
+so, we thought of keeping more JBPM instance data and  session to be maintained in JBPM database and ported the payload data to our dynamoDB. So that, we can query DynamoDB to send user reports. load on JBPM also reduced.
+ 
+2) other Design pattern implemented inline is CQRS:- WorkFlow Service reads from Oracle (query) and writes to JBPM database and DynamoDB (command).
+
+3) Event driven Architecture:-Services communicate via events (Event Bridge).
+
+4)Circuit Breaker Pattern:- Prevents repeated calls to failing services (e.g., SES or Lambda).
+
+5)Sidecar Pattern:- Add observability, logging, or security as sidecars (e.g., CloudWatch agent).
+
+=======================================
+Pitfalls:- Pros/cons:-
+
+Ingestion Service:
+Pitfalls / Deviations
+- Tight coupling to Oracle: Persisting directly into Oracle ties ingestion to a specific DB technology. Ideally, ingestion should publish events and let downstream services decide persistence.
+- Lambda + Kafka connectivity: Connecting AWS Lambda to on‑prem Kafka can be tricky (network latency, VPC setup, security). Persistent consumers (e.g., MSK Connect, EC2/ECS) are usually more reliable.
+
+WOrkFlowService:
+Pitfalls / Deviations
+- Concurrency limits: Lambda concurrency (20 instances) may not be enough if 1000–2000 JBPM instances must be created quickly. Risk of throttling.
+- Dual persistence (JBPM DB + DynamoDB): Maintaining correlated data in two stores introduces consistency challenges. Eventual consistency must be accepted.
+
+Task Execution Service:
+Pitfalls / Deviations
+- Direct DB writes: Users updating JBPM DB and DynamoDB directly couples UI tightly to persistence. A service API layer would be cleaner.
+- Caching risk: If caching summaries, invalidation strategies must be clear; otherwise stale data may mislead users.
+- Security: User login and direct DB access is risky—should be mediated by APIs.
+
+Email Service:
+Pitfalls / Deviations:-
+- Report generation in Lambda: Large CSV/PDF generation may exceed Lambda memory/time limits. A containerized batch job might be safer.
+
+======================================================
+1. API Gateway Pattern
+- Central entry point for all client requests.
+- Handles routing, throttling, authentication (JWT/OAuth2), and protocol translation.
+
+2. Event-Driven Architecture
+- Services communicate via events (Kafka, Lambda triggers).
+- Decouples services and improves scalability and fault tolerance.
+
+3. Database per Service Pattern
+- Each microservice owns its data (RDS for retrieval, DynamoDB for handler/mail sender).
+- Prevents tight coupling and supports independent scaling.
+
+4. CQRS (Command Query Responsibility Segregation)
+- GR Message Handler Service reads from RDS (query) and writes to DynamoDB (command).
+- Optimizes read/write performance and scalability.
+
+
+5. Circuit Breaker Pattern
+- Prevents repeated calls to failing services (e.g., SES or Lambda).
+- Can be implemented via service mesh or custom retry logic.
+
+6. Sidecar Pattern
+- Add observability, logging, or security as sidecars (e.g., CloudWatch agent, Fluent Bit).
+- Enhances monitoring without modifying core services.
+================================================
+🔹 SQS Trigger to Lambda
+- Purpose: Decouples producers and consumers. Messages land in SQS, and Lambda processes them asynchronously.
+- Benefits:
+- Handles burst traffic gracefully — messages queue up until Lambda can process them.
+- Provides retry and dead-letter queue (DLQ) support for resilience.
+- Ensures at-least-once delivery.
+- Limitations:
+- If Lambda concurrency is limited, messages may pile up in SQS, increasing latency.
+- Requires careful visibility timeout and batch size tuning.
+
+🔹 Reserved Concurrency for Lambda
+- Purpose: Guarantees a fixed number of concurrent executions for a Lambda function.
+- Benefits:
+- Prevents one Lambda from consuming all concurrency and starving others.
+- Ensures predictable throughput for critical functions.
+- Useful for rate-limiting downstream systems (e.g., databases, APIs).
+- Limitations:
+- If reserved concurrency is too low, SQS messages may back up.
+- If too high, you risk overwhelming downstream services.
+
+🔹 Without Reserved Concurrency
+- If SQS suddenly has 10,000 messages, Lambda may scale up aggressively (hundreds or thousands of concurrent executions).
+- Each execution might hit your database or API at the same time.
+- This can cause connection saturation, throttling errors, or even outages in those downstream systems.
+
+🔹 With Reserved Concurrency
+- You set a cap (e.g., 50 concurrent executions).
+- Even if SQS has 10,000 messages, Lambda will only process 50 at a time.
+- The rest of the messages stay safely in the queue until capacity frees up.
+- This ensures your downstream system only receives traffic at a controlled, predictable rate.
+
+---placing some common data in JBPM and in Our database is the compromise we did.
+====================================================
+--why you choose lambda instead of EC2????
+---- provisioning of EC2 is manual configuration, Lambda is serverless.
+---- scalable automatic for Lambda, EC2 needs Load Balancer and autoscaling setup.
+---- cost model (pay-per-usage) for Lambda and for EC2 pay per hour even idle. Instance creation wont happen on non-business days.
+---- Maintance no need for Lambda, but EC2 needs Manual maintance.
+---- Exceution time 15 minutes for Lambda which is enough our use case. where as EC2 is unlimited.
+---- lambda security is with IAM based rules, EC2 is with Security groups.
+=============================================
+-- only weekdays we have to run this job. more over - Always includes 1 million requests + 400,000 GB‑seconds per month at no charge.
+-- less than 10M records per month 17$ per month.
+-- why we choose lambda is to avoid all types of infrastructure maiantanance.EC2 requires ongoing system administration.
+
+- Choose EC2 if you need:
+- Custom OS/runtime control
+- Long-running processes
+- Consistent workloads
+
+- Choose Lambda if you need:
+- Event-driven execution
+- Minimal maintenance overhead
+- Cost efficiency for sporadic workload
+
+ EC2 = control + responsibility, Lambda = simplicity + automation.
+ =========================
+ 🔹 Where Saga Fits in Your Architecture
+Your flow has multiple steps that together form a logical “transaction” (from ingestion → workflow → task execution → reporting). Each step updates its own data store. If one step fails, you need compensating actions to roll back or adjust.
+
+Saga Steps (Orchestration Example)
+- Ingestion Service (Oracle + SQS)
+- Action: Store raw message in Oracle, publish to SQS.
+- Compensation: If downstream fails, mark Oracle record as FAILED or retry ingestion.
+- Workflow Service (JBPM + DynamoDB)
+- Action: Create JBPM process instance, store metadata in DynamoDB.
+- Compensation: If JBPM creation fails, delete DynamoDB entry and mark Oracle record as FAILED.
+- Task Execution Service (JBPM updates + DynamoDB updates)
+- Action: User processes tasks, updates JBPM DB and DynamoDB.
+- Compensation: If DynamoDB update fails, roll back JBPM status to PENDING and re‑queue the task.
+- Email Service (Reporting)
+- Action: Query DynamoDB, generate report, store in S3, log in Audit RDS.
+- Compensation: If report generation fails, publish a ReportFailed event, retry later, or notify stakeholders.
+
+Choreography Alternative
+Instead of a central orchestrator:
+- Each service publishes domain events (MessageIngested, WorkflowCreated, TaskCompleted, ReportGenerated).
+- Other services listen and react.
+- Compensations are triggered by events (WorkflowFailed, TaskRollbackRequested).
+This avoids a single orchestration bottleneck and keeps services autonomous.
+
+🔹 Where Saga Fits in Your Architecture
+Your flow has multiple steps that together form a logical “transaction” (from ingestion → workflow → task execution → reporting). Each step updates its own data store. If one step fails, you need compensating actions to roll back or adjust.
+
+Saga Steps (Orchestration Example)
+- Ingestion Service (Oracle + SQS)
+- Action: Store raw message in Oracle, publish to SQS.
+- Compensation: If downstream fails, mark Oracle record as FAILED or retry ingestion.
+- Workflow Service (JBPM + DynamoDB)
+- Action: Create JBPM process instance, store metadata in DynamoDB.
+- Compensation: If JBPM creation fails, delete DynamoDB entry and mark Oracle record as FAILED.
+- Task Execution Service (JBPM updates + DynamoDB updates)
+- Action: User processes tasks, updates JBPM DB and DynamoDB.
+- Compensation: If DynamoDB update fails, roll back JBPM status to PENDING and re‑queue the task.
+- Email Service (Reporting)
+- Action: Query DynamoDB, generate report, store in S3, log in Audit RDS.
+- Compensation: If report generation fails, publish a ReportFailed event, retry later, or notify stakeholders.
+
+Choreography Alternative
+Instead of a central orchestrator:
+- Each service publishes domain events (MessageIngested, WorkflowCreated, TaskCompleted, ReportGenerated).
+- Other services listen and react.
+- Compensations are triggered by events (WorkflowFailed, TaskRollbackRequested).
+This avoids a single orchestration bottleneck and keeps services autonomous.
+
+We applied the Saga Pattern to manage distributed transactions across Oracle, JBPM DB, DynamoDB, and reporting. Each service executed a local transaction and published events. If a step failed, compensating actions rolled back prior changes — for example, if JBPM creation failed, we deleted DynamoDB metadata and marked the Oracle record as failed. This gave us eventual consistency, resilience, and clear auditability without relying on heavyweight distributed transactions.”
+
+- Ingestion Service
+- Action: Store in Oracle, publish to SQS.
+- Compensation: Mark record as FAILED if downstream fails.
+- Workflow Service
+- Action: Create JBPM instance, store metadata in DynamoDB.
+- Compensation: Delete metadata, mark Oracle record as FAILED.
+- Task Execution Service
+- Action: Process tasks, update JBPM DB + DynamoDB.
+- Compensation: Roll back JBPM state if DynamoDB update fails.
+- Email Service
+- Action: Generate report, store in S3, log in Audit RDS.
+- Compensation: Publish ReportFailed event, retry later.
+
+===========================================
+
+
+
+
+
+
+
+

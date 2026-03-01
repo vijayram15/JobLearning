@@ -1,0 +1,248 @@
+How do you ensure scalability and performance of micro services in your projects?
+--Firstly, I design microservices with clear boundaries and responsibilities, which allows for independent scaling on demand. (Eg: using AWS Ec2 and Lambda at concentrix)
+--I also focus on optimising database intercations by implementing cache strategies and performance tunining especially with SQL databases.
+--Moreover I employ asynchronous messaging patterns to decouple services, which enhances responsiveness and throughput.
+--regular performance monitoring using cloudwatch , helps us in identifying bottlenecks and optimising resource allocation.
+================================
+can you explain your approach to secure your application development?
+--it's paramount important when dealing with sensitive data.
+--All inputs are validated and sanitized to prevent vulnerabilities like SQL Injections and XSS.
+--For protecting APIs I used JWT and OAuth2.
+--Regularly we perform security audits using tools like blackduck and veracode to identify any security flaws.
+=====================================
+What design patterns you mostly use in your micro service architecture?
+--I frequently use the design patterns which enhance modularity and maintainability.
+--one of the primary pattern is API Gateway pattern.Which acts as a signle entry point for all client requests, simplifying client interaction.
+--Additionally I use service discovery pattern to dynamically identify services.
+--At concentrix, I implemented circuite Breaker to handle failures gracefully.
+--Moreover I apply Event Sourcing to maintain history of changes, useful for auditing and debugging.
+===================================
+can you describe your experience with java and spring boot in developing micro services?
+I designed a Spring Boot microservice that ingested Kafka messages, persisted them in Oracle, triggered JBPM workflows, and coordinated task execution via DynamoDB. I applied the Saga pattern to handle distributed transactions and ensured auditability through event-driven reporting.
+===========================
+What is biggest challenge you faced and how you fixed it?
+
+One of the biggest challenges I faced in designing microservices was managing data consistency across distributed services. In a monolithic system, a single transaction can update multiple tables atomically. But once you break that into microservices, each with its own database, you lose that luxury.
+
+To fix we used below approach:-
+saga pattern, event-driven architecture,idempotency and retry mechanisms
+
+Other biggest challenge is removing cyclic and tight coupling:-
+
+Why Cyclic & Tight Coupling Happens: Mainly due to:
+- Direct synchronous calls between services (e.g., Service A calls Service B, which calls Service A again).
+- Shared databases or schemas, forcing services to change together.
+ 
+ Example Fix:
+We had a cyclic dependency between Order and Payment:
+- Order called Payment to confirm, and Payment called Order to update status.
+- This created a loop and deployment headaches.
+Solution:
+- Introduced an Event Bus.
+- Order published OrderPlaced. Payment subscribed, processed, and published PaymentConfirmed.
+- Order listened to PaymentConfirmed to update its status.
+- No direct calls, no cycles, and both services became independently deployable.
+=================================================
+What is the recent production issue you fixed in your project???
+
+Example 1: Duplicate Workflow Instances
+Issue:
+- We noticed that some Kafka messages were being ingested twice due to network retries.
+- The Ingestion Service wrote duplicate “NEW” records into Oracle and published them to SQS.
+- As a result, Workflow Service created duplicate JBPM process instances, confusing end‑users and inflating reporting numbers.
+Fix:
+- Implemented idempotency checks:
+- Added a unique message ID at ingestion.
+- Before creating a JBPM instance, Workflow Service checked DynamoDB for existing correlation.
+- Introduced the Outbox Pattern in Oracle to ensure reliable, single delivery to SQS.
+- Outcome: No duplicate workflows, clean reporting, and reduced operational noise.
+
+Example 2: Inconsistent Status Between JBPM DB and DynamoDB
+Issue:
+- End‑users processed tasks via Task Execution Service.
+- Updates were written to JBPM DB and DynamoDB in parallel.
+- Occasionally, DynamoDB writes failed (due to throttling), while JBPM DB succeeded.
+- This caused reporting mismatches: Email Service showed tasks as “IN_PROGRESS” even though JBPM DB had them “COMPLETED.”
+Fix:
+- Applied the Transactional Outbox Pattern in Workflow Service:
+- All workflow state changes were first committed to JBPM DB.
+- An outbox table captured events (TaskCompleted).
+- A background job reliably published those events to DynamoDB.
+- Added retry with exponential backoff for DynamoDB writes.
+- Outcome: DynamoDB became eventually consistent with JBPM DB, and reporting accuracy improved.
+
+Example 3: End‑of‑Day Email Delays
+Issue:
+- Email Service queried DynamoDB for completed instances.
+- With 1000–2000 workflows daily, queries sometimes timed out or returned incomplete data.
+- Stakeholders received delayed or partial reports.
+Fix:
+- Introduced a pre‑aggregated reporting table in Audit RDS.
+- Workflow Service published InstanceCompleted events directly to Audit RDS.
+- Email Service queried Audit RDS instead of DynamoDB.
+- Outcome: Faster queries, reliable reports, and compliance logging in one place.
+=============================================
+Micro services attacks and vulnerabilities:-
+
+🔹 Key Attack Vectors & Vulnerabilities
+- API Exposure: Each microservice exposes APIs that can be exploited if not secured.
+- Data Stores: Oracle, DynamoDB, JBPM DB, and Audit RDS are potential targets for injection, privilege escalation, or misconfiguration.
+- Event-Driven Components: SQS, EventBridge, and Kafka can be abused for replay attacks or message tampering.
+- Serverless Risks: AWS Lambda functions can be vulnerable to insecure code, dependency attacks, or privilege mismanagement.
+- Distributed Nature: More services = more inter-service communication, increasing the risk of man-in-the-middle attacks and misconfigured IAM roles.
+
+🔹 Security Best Practices for Your Architecture
+1. API Security
+- Use OAuth2 / JWT for authentication and authorization.
+- Apply rate limiting and API Gateway WAF rules to prevent DDoS and brute force attacks.
+- Validate all inputs to prevent SQL injection and deserialization attacks.
+2. Data Security
+- Encrypt data at rest (Oracle TDE, DynamoDB KMS, RDS encryption).
+- Encrypt data in transit with TLS everywhere.
+- Apply least privilege IAM roles — Lambda functions should only access the specific tables/queues they need.
+- Regularly rotate credentials and secrets (AWS Secrets Manager).
+3. Serverless Security (AWS Lambda)
+- Keep dependencies minimal and scan them for vulnerabilities (e.g., OWASP Dependency-Check).
+- Use environment variables securely (never hardcode secrets).
+- Apply runtime monitoring (AWS CloudWatch, GuardDuty) to detect anomalies.
+- Enable VPC integration for Lambdas that access databases, reducing exposure.
+4. Message Queue Security
+- Enable SQS/Kafka message encryption.
+- Use message signing or unique IDs to prevent replay attacks.
+- Apply dead-letter queues to handle poison messages safely.
+5. Workflow & Task Execution
+- Ensure JBPM DB and DynamoDB updates are idempotent to prevent corruption from retries.
+- Apply role-based access control (RBAC) for end-users processing tasks.
+- Audit all user actions in RDS for compliance.
+6. Monitoring & Incident Response
+- Centralize logs in CloudWatch + ELK stack.
+- Use distributed tracing (OpenTelemetry, AWS X-Ray) to detect anomalies across services.
+- Automate alerts for suspicious activity (e.g., unusual API calls, failed logins).
+
+🔹 Risk Mitigation Strategy
+- Defense in Depth: Secure each layer (API, Lambda, DB, queues).
+- Zero Trust: Never assume internal traffic is safe; authenticate and authorize every call.
+- Continuous Security Testing: Regular penetration tests, dependency scans, and compliance checks.
+- Automated Remediation: Use AWS Config + Security Hub to auto-detect and fix misconfigurations.
+
+✅ In interviews, you can summarize like this:
+“In our microservices architecture, we handled vulnerabilities by applying defense-in-depth. For example, we secured APIs with JWT and WAF, encrypted all data stores with KMS, and applied least-privilege IAM roles for Lambdas. We also used idempotent updates and dead-letter queues to prevent replay attacks. Finally, we centralized monitoring with CloudWatch and X-Ray, which gave us visibility into anomalies and helped us respond quickly to incidents.”
+
+=====================================================
+Micro SErvices orchestration:
+
+- Definition: Automated coordination of distributed microservices so they work together as one cohesive application.
+- Responsibilities:
+- Manage service interactions and dependencies.
+- Handle retries, fault tolerance, and compensation logic.
+- Provide visibility into the end-to-end workflow.
+- Analogy: Instead of services “dancing” independently (choreography), orchestration is a central brain telling each service when and how to act.
+
+Microservices orchestration is the practice of centrally coordinating how multiple microservices interact to complete a business process. Think of it like a conductor directing each musician in an orchestra — ensuring services execute in the right order, handle dependencies, and recover from failures.
+
+“Microservices orchestration is about centrally coordinating service interactions. In our architecture, JBPM acted as the orchestrator, ensuring ingestion, workflow creation, task execution, and reporting happened in sequence. This gave us visibility, fault tolerance, and consistency across distributed services.”
+
+🔹 Applying Orchestration in Your Architecture
+In your setup (Oracle, SQS, JBPM, DynamoDB, Email Service):
+- Workflow Service (JBPM) acts as the orchestrator:
+- Receives messages from SQS.
+- Creates workflow instances.
+- Calls downstream services (Task Execution, Email Service) in sequence.
+- Benefits:
+- Clear visibility into workflow state.
+- Centralized error handling (Saga compensations).
+- Easier to enforce business rules across services.
+
+🔹 Example Flow
+- Ingestion Service publishes a message.
+- Workflow Service (orchestrator) starts a JBPM process.
+- JBPM orchestrates calls to:
+- Task Execution Service (user tasks).
+- Email Service (report generation).
+- If a step fails, orchestrator triggers compensating actions (rollback, retries).
+
+===================================
+How to restric APIs to access certain content only???
+
+We restricted API access using JWT-based authentication and role-based authorization. For example, only users with the reporting_admin role could generate reports, while task execution APIs filtered results based on user claims. We enforced these rules at the API Gateway level and also applied row-level security in DynamoDB. This ensured that sensitive content was only accessible to authorized users.”
+
+🔹 Strategies to Restrict API Access
+1. Authentication & Authorization
+- Authentication: Verify who is calling the API (e.g., OAuth2, JWT, AWS Cognito).
+- Authorization: Decide what they can access.
+- Role-Based Access Control (RBAC): Assign roles like admin, user, auditor.
+- Attribute-Based Access Control (ABAC): Restrict based on attributes (department, region, data sensitivity).
+- Example: Only users with the finance_admin role can access /reports/financial.
+
+2. API Gateway Policies
+- Use AWS API Gateway or Spring Cloud Gateway to enforce restrictions.
+- Define resource policies:
+- Block access to certain endpoints unless requests come from specific IP ranges, VPCs, or authenticated identities.
+- Example: /admin/* endpoints only accessible from corporate VPN IPs.
+
+3. Data-Level Restrictions
+- Apply row-level or column-level security in databases.
+- Example: A user querying DynamoDB only sees records tagged with their department.
+- Combine with API filters so sensitive fields (like PII) are excluded unless authorized.
+
+4. Scopes & Claims in Tokens
+- Use JWT claims or OAuth2 scopes to restrict access.
+- Example:
+- Token with scope read:reports → can only fetch reports.
+- Token with scope write:reports → can modify reports.
+- Spring Security can map these claims directly to method-level restrictions (@PreAuthorize).
+
+5. Rate Limiting & Throttling
+- Prevent abuse by restricting how often APIs can be called.
+- Example: End-users can call /tasks 100 times per minute, but system services can call 1000 times per minute.
+
+6. Content Filtering
+- Restrict APIs from returning sensitive content unless explicitly authorized.
+- Example: Mask SSNs or credit card numbers unless the caller has PII_ACCESS permission.
+
+7. Auditing & Monitoring
+- Log every access attempt (successful or denied).
+- Store logs in Audit RDS for compliance.
+- Use AWS CloudWatch + GuardDuty to detect suspicious access patterns.
+=============================
+How the rate limiter works??
+
+A rate limiter is a mechanism that controls how many requests an API or service can handle within a given time window. It’s used to prevent abuse (like DDoS attacks or brute force attempts), protect backend resources, and ensure fair usage among clients.
+
+1. Core Idea
+- Define a limit: e.g., 100 requests per minute per user.
+- Track requests using counters or tokens.
+- If a client exceeds the limit, the system rejects further requests with an error (usually HTTP 429 Too Many Requests).
+
+3. Implementation in Microservices
+- API Gateway (AWS API Gateway, Spring Cloud Gateway)
+- Configure per‑API or per‑user limits.
+- Example: 100 requests/minute per IP.
+- Distributed Cache (Redis, DynamoDB)
+- Store counters or tokens per client.
+- Example: Redis key user:123:requests with TTL = 1 minute.
+- Spring Boot Example
+- Use libraries like Bucket4j or Resilience4j.
+- Annotate endpoints with rate limiting rules.
+
+4. Example Flow (Token Bucket)
+- Bucket starts with 10 tokens.
+- Each request consumes 1 token.
+- Tokens refill at 1 per second.
+- If bucket is empty, requests are rejected until tokens refill.
+This allows short bursts (up to 10 requests instantly), but enforces a steady average rate.
+
+5. Benefits
+- Protects backend services from overload.
+- Prevents malicious abuse (e.g., brute force login attempts).
+- Ensures fair usage among multiple clients.
+- Improves stability and user experience.
+=========================================
+
+
+
+
+
+
+
+
